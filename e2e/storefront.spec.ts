@@ -197,3 +197,38 @@ test('mobile bestsellers autoplay and pause when touched', async ({ page, isMobi
   await page.waitForTimeout(3800);
   expect(await strip.evaluate(el => el.scrollLeft)).toBeCloseTo(paused, 0);
 });
+
+test('search history completes catalog terms and rejects meaningless or ambiguous fragments', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem('history-seeded')) {
+      localStorage.setItem('cosmea:search-history', JSON.stringify(['сы', 'сыв', 'сыворотка', '@@@', 'для', 'неттакоготовара123']));
+      sessionStorage.setItem('history-seeded', '1');
+    }
+  });
+  await page.goto('/catalog', { waitUntil: 'domcontentloaded' });
+  const search = page.getByRole('combobox', { name: 'Поиск по каталогу' });
+  const saved = () => page.evaluate(() => JSON.parse(localStorage.getItem('cosmea:search-history') ?? '[]'));
+  await search.focus();
+  await expect(page.getByRole('option', { name: 'сыворотка', exact: true })).toBeVisible();
+  await expect.poll(saved).toEqual(['сыворотка']);
+  for (const query of ['сы', 'сыв', 'шам', 'кр']) {
+    await search.fill(query);
+    await search.press('Enter');
+    await page.waitForURL(url => url.searchParams.get('q') === query);
+  }
+  await expect.poll(saved).toEqual(['крем', 'шампунь', 'сыворотка']);
+  for (const query of ['к', '@@@', 'для', 'ту', 'неттакоготовара123']) {
+    await search.fill(query);
+    await search.press('Enter');
+    await page.waitForURL(url => url.searchParams.get('q') === query);
+  }
+  await expect.poll(saved).toEqual(['крем', 'шампунь', 'сыворотка']);
+  await search.fill('сы');
+  await page.locator('#search-suggestions a').first().click();
+  await expect(page).toHaveURL(new RegExp('/catalog/1$'));
+  await expect.poll(saved).toEqual(['сыворотка', 'крем', 'шампунь']);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await search.focus();
+  await expect(page.getByRole('option', { name: 'сыворотка', exact: true })).toBeVisible();
+  await expect.poll(saved).toEqual(['сыворотка', 'крем', 'шампунь']);
+});
