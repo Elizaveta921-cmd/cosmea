@@ -1,0 +1,94 @@
+<section class="mx-auto max-w-7xl px-4 py-10">
+  <h1 class="font-display text-5xl">Корзина</h1>
+
+  @if (ordered()) {
+    <div class="mt-10 rounded-3xl border border-sand bg-white p-10 text-center">
+      <app-icon name="check" class="size-12 text-rosewood" />
+      <h2 class="mt-4 font-display text-3xl">Спасибо за заказ!</h2>
+      <p class="mt-2 text-ink/60">Это демонстрационный магазин: заказ никуда не отправляется.</p>
+      <a routerLink="/catalog"
+         class="mt-6 inline-block rounded-full bg-ink px-7 py-3 text-sm text-cream hover:bg-rosewood">
+        Продолжить покупки
+      </a>
+    </div>
+  } @else if (cart.lines().length === 0) {
+    <div class="mt-10 rounded-3xl border border-dashed border-sand py-20 text-center">
+      <p class="font-display text-3xl">Корзина пуста</p>
+      <p class="mt-2 text-sm text-ink/60">Добавьте что-нибудь из каталога.</p>
+      <a routerLink="/catalog"
+         class="mt-6 inline-block rounded-full bg-ink px-7 py-3 text-sm text-cream hover:bg-rosewood">
+        Перейти в каталог
+      </a>
+    </div>
+  } @else {
+    <div class="mt-8 grid gap-10 lg:grid-cols-[1fr_22rem]">
+
+      <div>
+        <ul class="divide-y divide-sand border-y border-sand">
+          @for (l of cart.lines(); track l.product.id) {
+            <li class="flex gap-4 py-5">
+              <a [routerLink]="['/catalog', l.product.id]" class="shrink-0">
+                <img [src]="l.product.images[0]" [alt]="l.product.name" class="size-24 rounded-xl object-cover" />
+              </a>
+
+              <div class="flex min-w-0 flex-1 flex-col">
+                <p class="text-xs uppercase tracking-wide text-ink/50">{{ l.product.brand }}</p>
+                <a [routerLink]="['/catalog', l.product.id]" class="font-medium hover:text-rosewood">
+                  {{ l.product.name }}
+                </a>
+                <p class="text-sm text-ink/50">{{ l.product.volume }} &middot; {{ l.product.price | price }}</p>
+
+                <div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-3">
+                  <app-cart-control class="w-36" [productId]="l.product.id" [productName]="l.product.name" />
+
+                  <div class="flex items-center gap-3">
+                    <span class="font-semibold">{{ l.sum | price }}</span>
+                    <button type="button" (click)="cart.remove(l.product.id)" aria-label="Удалить из корзины"
+                            class="rounded-full p-2 text-ink/50 hover:bg-sand hover:text-rosewood">
+                      <app-icon name="trash" class="size-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+
+        <button type="button" (click)="cart.clear()"
+                class="mt-4 text-sm text-ink/60 underline underline-offset-4 hover:text-rosewood">
+          Очистить корзину
+        </button>
+      </div>
+
+      <aside class="h-fit rounded-3xl border border-sand bg-white p-6 lg:sticky lg:top-24">
+        <h2 class="font-display text-2xl">Ваш заказ</h2>
+
+        <dl class="mt-4 space-y-3 text-sm">
+          <div class="flex justify-between">
+            <dt>Товары ({{ cart.count() }})</dt>
+            <dd>{{ cart.total() | price }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt>Доставка</dt>
+            <dd>{{ deliveryLabel() }}</dd>
+          </div>
+          <div class="flex justify-between border-t border-sand pt-3 text-base font-semibold">
+            <dt>Итого</dt>
+            <dd>{{ grandTotal() | price }}</dd>
+          </div>
+        </dl>
+
+        @if (toFreeDelivery() > 0) {
+          <p class="mt-3 text-xs text-ink/60">
+            Добавьте товаров ещё на {{ toFreeDelivery() | price }}, и доставка будет бесплатной.
+          </p>
+        }
+
+        <button type="button" (click)="checkout()"
+                class="mt-6 w-full rounded-full bg-ink py-3 text-cream transition hover:bg-rosewood">
+          Оформить заказ
+        </button>
+      </aside>
+    </div>
+  }
+</section>

@@ -1,0 +1,36 @@
+<header class="sticky top-0 z-40 border-b border-sand bg-cream/90 backdrop-blur">
+  <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 gap-y-2 px-4 py-3 md:gap-y-3 md:py-4">
+
+    <a routerLink="/" class="font-display text-3xl font-semibold tracking-wide">Cosmea</a>
+
+    <nav class="hidden gap-6 text-sm md:flex md:w-auto" aria-label="Основное меню">
+      <a routerLink="/" routerLinkActive="text-rosewood" [routerLinkActiveOptions]="{ exact: true }"
+         class="hover:text-rosewood">Главная</a>
+      <a routerLink="/catalog" routerLinkActive="text-rosewood" class="hover:text-rosewood">Каталог</a>
+    </nav>
+
+    <app-search-box class="order-4 w-full md:order-none md:ml-auto md:w-80" />
+
+    <div class="ml-auto hidden items-center gap-1 md:ml-0 md:flex">
+      <a routerLink="/favorites" routerLinkActive="text-rosewood" aria-label="Избранное"
+         class="relative rounded-full p-2 hover:bg-sand">
+        <app-icon name="heart" class="size-6" />
+        @if (favorites.count() > 0) {
+          <span class="absolute -right-0.5 -top-0.5 grid size-5 place-items-center rounded-full bg-rosewood text-[11px] text-white">
+            {{ favorites.count() }}
+          </span>
+        }
+      </a>
+
+      <a routerLink="/cart" routerLinkActive="text-rosewood" aria-label="Корзина"
+         class="relative rounded-full p-2 hover:bg-sand">
+        <app-icon name="bag" class="size-6" />
+        @if (cart.count() > 0) {
+          <span class="absolute -right-0.5 -top-0.5 grid size-5 place-items-center rounded-full bg-rosewood text-[11px] text-white">
+            {{ cart.count() }}
+          </span>
+        }
+      </a>
+    </div>
+  </div>
+</header>

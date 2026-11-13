@@ -1,0 +1,45 @@
+<div class="relative">
+  <form (submit)="submit($event)" role="search"
+        class="flex items-center gap-2 rounded-full border border-sand bg-white px-4 py-2.5 focus-within:border-rosewood">
+    <app-icon name="search" class="size-5 shrink-0 text-ink/50" />
+    <input type="search" autocomplete="off" aria-label="Поиск по каталогу" role="combobox" aria-autocomplete="list"
+           aria-controls="search-suggestions" [attr.aria-expanded]="open()"
+           [attr.aria-activedescendant]="open() && active() >= 0 ? 'search-option-' + active() : null"
+           placeholder="Поиск: сыворотка, помада…" class="min-w-0 w-full bg-transparent text-sm outline-none"
+           [value]="query()" (input)="onInput($event)" (focus)="focus()" (keydown)="onKeydown($event)" />
+  </form>
+  @if (open()) {
+    <div id="search-suggestions" class="search-suggestions absolute inset-x-0 top-full z-50 mt-2 max-h-[65dvh] overflow-y-auto rounded-2xl border border-sand bg-white shadow-xl">
+      @if (hasQuery()) {
+        <div role="listbox" aria-label="Найденные товары">
+          @for (p of results(); track p.id; let i = $index) {
+            <a [id]="'search-option-' + i" [routerLink]="['/catalog', p.id]" (click)="pick()" role="option" [attr.aria-selected]="active() === i"
+               class="flex items-center gap-3 px-3 py-2 hover:bg-cream" [class.bg-cream]="active() === i">
+              <img [src]="p.images[0]" [alt]="p.name" class="size-12 shrink-0 rounded-lg object-contain" />
+              <span class="min-w-0 flex-1"><span class="block truncate text-sm">{{ p.name }}</span><span class="block text-xs text-ink/50">{{ p.brand }}</span></span>
+              <span class="shrink-0 text-xs font-medium">{{ p.price | price }}</span>
+            </a>
+          } @empty { <p class="px-4 py-5 text-sm text-ink/60">Ничего не найдено. Попробуйте другой запрос.</p> }
+        </div>
+        @if (matches().length) {
+          <button type="button" (click)="submit()" class="w-full border-t border-sand px-4 py-3 text-sm font-medium text-rosewood hover:bg-cream">Все результаты ({{ matches().length }})</button>
+        }
+      } @else {
+        <div class="flex items-center justify-between gap-2 px-4 pb-2 pt-4">
+          <p class="text-sm font-semibold">История поиска</p>
+          @if (history.items().length) { <button type="button" (click)="history.clear(); active.set(-1)" class="text-xs text-rosewood hover:underline">Очистить</button> }
+        </div>
+        <div role="listbox" aria-label="История поиска">
+          @for (q of history.items(); track q; let i = $index) {
+            <div class="flex items-center hover:bg-cream" [class.bg-cream]="active() === i">
+              <button type="button" [id]="'search-option-' + i" (click)="useHistory(q)" role="option" [attr.aria-selected]="active() === i" class="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left text-sm">
+                <app-icon name="clock" class="size-4 shrink-0 text-ink/40" /><span class="truncate">{{ q }}</span>
+              </button>
+              <button type="button" (click)="history.remove(q); active.set(-1)" [attr.aria-label]="'Удалить запрос: ' + q" class="mr-2 grid size-9 shrink-0 place-items-center rounded-full text-ink/40 hover:bg-sand"><app-icon name="close" class="size-4" /></button>
+            </div>
+          } @empty { <p class="px-4 pb-5 pt-2 text-sm text-ink/50">Здесь появятся ваши поисковые запросы.</p> }
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,122 @@
+<section class="mx-auto flex max-w-[90rem] flex-col px-4 pb-8 md:pt-8">
+  <div class="catalog-toolbar order-1 flex items-center gap-3 md:order-2 md:mt-6" aria-label="Настройки каталога">
+    <label class="flex min-w-0 flex-1 items-center gap-2 text-sm md:flex-none">
+      <app-icon name="sort" class="size-5 shrink-0 text-rosewood" />
+      <span class="hidden text-ink/60 md:inline">Сортировка:</span>
+      <select (change)="onSort($event)" [value]="sort()" aria-label="Сортировка"
+              class="min-w-0 flex-1 bg-transparent py-3 outline-none md:rounded-full md:border md:border-sand md:bg-white md:px-3 md:py-2">
+        @for (s of sorts; track s.key) { <option [value]="s.key" [selected]="s.key === sort()">{{ s.label }}</option> }
+      </select>
+    </label>
+    <button type="button" (click)="openFilters()" aria-haspopup="dialog"
+            class="ml-auto flex shrink-0 items-center gap-2 py-3 text-sm font-medium lg:hidden">
+      <app-icon name="sliders" class="size-5" /> Фильтры
+      @if (filterCount()) { <span class="grid size-5 place-items-center rounded-full bg-rosewood text-xs text-white">{{ filterCount() }}</span> }
+    </button>
+    <div class="ml-auto hidden items-center gap-1 rounded-full border border-sand bg-white p-1 xl:flex" role="group" aria-label="Размер сетки">
+      @for (n of columnOptions; track n) {
+        <button type="button" (click)="setColumns(n)" [attr.aria-pressed]="columns() === n"
+                [attr.aria-label]="n + ' товара в ряд'" [title]="n + ' товара в ряд'"
+                class="grid size-10 place-items-center rounded-full transition"
+                [class.bg-ink]="columns() === n" [class.text-cream]="columns() === n">
+          <app-icon [name]="n === 4 ? 'grid-four' : 'grid-six'" class="size-5" />
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="order-2 mt-6 md:order-1 md:mt-0">
+    <h1 class="font-display text-4xl md:text-5xl">@if (q()) { Результаты: «{{ q() }}» } @else { Каталог }</h1>
+    <p class="mt-1 text-sm text-ink/60">Найдено товаров: {{ filtered().length }}</p>
+  </div>
+
+  <ng-template #filters>
+      <div>
+        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide">Категория</h2>
+        <div class="flex flex-wrap gap-2 lg:flex-col lg:items-start lg:gap-1">
+          <button type="button" (click)="setCategory(null)"
+                  class="rounded-full px-3 py-1.5 text-sm transition hover:text-rosewood"
+                  [class.bg-rosewood]="category() === null" [class.text-white]="category() === null"
+                  [class.hover:text-white]="category() === null">
+            Все
+          </button>
+          @for (c of categories; track c.id) {
+            <button type="button" (click)="setCategory(c.id)"
+                    class="rounded-full px-3 py-1.5 text-sm transition hover:text-rosewood"
+                    [class.bg-rosewood]="category() === c.id" [class.text-white]="category() === c.id"
+                    [class.hover:text-white]="category() === c.id">
+              {{ c.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div>
+        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide">Бренд</h2>
+        <div class="space-y-2">
+          @for (b of brandList; track b) {
+            <label class="flex cursor-pointer items-center gap-2 text-sm">
+              <input type="checkbox" class="size-4 accent-rosewood"
+                     [checked]="brands().includes(b)" (change)="toggleBrand(b)" />
+              {{ b }}
+            </label>
+          }
+        </div>
+      </div>
+
+      <div>
+        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide">Цена</h2>
+        <!-- Порядок атрибутов важен: сначала max, потом value -->
+        <input type="range" min="0" [max]="sliderMax" step="100" [value]="priceMax()"
+               (input)="onPrice($event)" aria-label="Максимальная цена"
+               class="w-full accent-rosewood" />
+        <p class="mt-1 text-sm text-ink/60">до {{ priceMax() | price }}</p>
+      </div>
+
+      <label class="flex cursor-pointer items-center gap-2 text-sm">
+        <input type="checkbox" class="size-4 accent-rosewood"
+               [checked]="onlySale()" (change)="toggleSale()" />
+        Только со скидкой
+      </label>
+
+      @if (hasFilters()) {
+        <button type="button" (click)="resetFilters()"
+                class="text-sm text-rosewood underline underline-offset-4">
+          Сбросить все фильтры
+        </button>
+      }
+
+  </ng-template>
+
+  <div class="order-3 mt-8 grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
+    <aside class="hidden space-y-8 lg:sticky lg:top-24 lg:block lg:self-start" aria-label="Фильтры каталога">
+      <ng-container [ngTemplateOutlet]="filters" />
+    </aside>
+    <div class="min-w-0">
+      <div class="grid gap-x-4 gap-y-8 md:gap-x-5" [class]="gridClass()">
+        @for (p of pageItems(); track p.id) { <app-product-card [product]="p" /> }
+        @empty {
+          <div class="col-span-full rounded-2xl border border-dashed border-sand py-16 text-center">
+            <p class="font-display text-3xl">Ничего не найдено</p>
+            <p class="mt-2 text-sm text-ink/60">Попробуйте изменить запрос или фильтры.</p>
+            <button type="button" (click)="resetFilters()" class="mt-5 rounded-full bg-ink px-6 py-2.5 text-sm text-cream hover:bg-rosewood">Сбросить фильтры</button>
+          </div>
+        }
+      </div>
+      <div class="mt-12"><app-pagination [page]="currentPage()" [totalPages]="totalPages()" (pageChange)="setPage($event)" /></div>
+    </div>
+  </div>
+
+  <dialog #filtersDialog class="filters-dialog" aria-labelledby="filters-title" (click)="onBackdrop($event)">
+    <div class="flex max-h-[85dvh] flex-col bg-cream">
+      <div class="flex items-center justify-between border-b border-sand px-5 py-4">
+        <h2 id="filters-title" class="font-display text-3xl">Фильтры</h2>
+        <button type="button" (click)="closeFilters()" aria-label="Закрыть фильтры" class="grid size-11 place-items-center rounded-full hover:bg-sand"><app-icon name="close" class="size-5" /></button>
+      </div>
+      <div class="min-h-0 space-y-8 overflow-y-auto p-5"><ng-container [ngTemplateOutlet]="filters" /></div>
+      <div class="border-t border-sand bg-cream p-5">
+        <button type="button" (click)="closeFilters()" class="w-full rounded-full bg-ink px-5 py-3 text-sm font-medium text-cream">Показать товары ({{ filtered().length }})</button>
+      </div>
+    </div>
+  </dialog>
+</section>
