@@ -26,8 +26,9 @@ import { Icon } from './icon';
     } @else {
       <button type="button" (click)="cart.add(productId())"
               [attr.aria-label]="'Добавить в корзину: ' + productName()"
-              class="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink px-3 text-sm font-medium text-cream transition hover:bg-rosewood">
-        <app-icon name="bag" class="size-4" /> В корзину
+              [class.bg-ink]="!accent()" [class.bg-rosewood]="accent()"
+              class="flex h-11 w-full items-center justify-center gap-2 rounded-full px-3 text-sm font-medium text-cream transition hover:bg-rosewood">
+        <app-icon name="bag" class="size-4" /> {{ label() }}
       </button>
     }
   `,
@@ -35,6 +36,8 @@ import { Icon } from './icon';
 export class CartControl {
   readonly productId = input.required<number>();
   readonly productName = input('товар');
+  readonly label = input('В корзину');
+  readonly accent = input(false);
   protected readonly cart = inject(CartService);
   protected readonly qty = computed(() => this.cart.quantity(this.productId()));
 }

@@ -22,7 +22,7 @@ import { ProductCard } from '../../shared/ui/product-card';
       @if (favorites.count() > 0) {
         <div class="mt-8 grid grid-cols-2 gap-x-5 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
           @for (p of favorites.items(); track p.id) {
-            <app-product-card [product]="p" />
+            <app-product-card [product]="p" [favoriteView]="true" />
           }
         </div>
       } @else {

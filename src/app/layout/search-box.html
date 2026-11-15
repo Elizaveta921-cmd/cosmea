@@ -13,7 +13,7 @@
       @if (hasQuery()) {
         <div role="listbox" aria-label="Найденные товары">
           @for (p of results(); track p.id; let i = $index) {
-            <a [id]="'search-option-' + i" [routerLink]="['/catalog', p.id]" (click)="pick()" role="option" [attr.aria-selected]="active() === i"
+            <a [id]="'search-option-' + i" [routerLink]="['/catalog', p.id]" (click)="pick(p)" role="option" [attr.aria-selected]="active() === i"
                class="flex items-center gap-3 px-3 py-2 hover:bg-cream" [class.bg-cream]="active() === i">
               <img [src]="p.images[0]" [alt]="p.name" class="size-12 shrink-0 rounded-lg object-contain" />
               <span class="min-w-0 flex-1"><span class="block truncate text-sm">{{ p.name }}</span><span class="block text-xs text-ink/50">{{ p.brand }}</span></span>
@@ -33,7 +33,12 @@
           @for (q of history.items(); track q; let i = $index) {
             <div class="flex items-center hover:bg-cream" [class.bg-cream]="active() === i">
               <button type="button" [id]="'search-option-' + i" (click)="useHistory(q)" role="option" [attr.aria-selected]="active() === i" class="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left text-sm">
-                <app-icon name="clock" class="size-4 shrink-0 text-ink/40" /><span class="truncate">{{ q }}</span>
+                @if (history.productFor(q); as product) {
+                  <img [src]="product.images[0]" alt="" class="size-10 shrink-0 rounded-lg bg-white object-contain" />
+                  <span class="min-w-0"><span class="block line-clamp-2">{{ product.name }}</span><span class="text-xs text-ink/50">{{ product.brand }}</span></span>
+                } @else {
+                  <app-icon name="clock" class="size-4 shrink-0 text-ink/40" /><span class="truncate">{{ q }}</span>
+                }
               </button>
               <button type="button" (click)="history.remove(q); active.set(-1)" [attr.aria-label]="'Удалить запрос: ' + q" class="mr-2 grid size-9 shrink-0 place-items-center rounded-full text-ink/40 hover:bg-sand"><app-icon name="close" class="size-4" /></button>
             </div>

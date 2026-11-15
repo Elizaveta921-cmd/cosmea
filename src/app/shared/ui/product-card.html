@@ -1,5 +1,5 @@
 @let p = product();
-<article class="group flex h-full min-w-0 flex-col" [attr.data-product-id]="p.id">
+<article [class.favorite-card]="favoriteView()" class="group flex h-full min-w-0 flex-col" [attr.data-product-id]="p.id">
   <div class="relative">
     <a [routerLink]="['/catalog', p.id]" class="relative block aspect-[4/5] overflow-hidden rounded-2xl bg-white">
       <img [src]="p.images[0]" [alt]="p.name" loading="lazy" class="size-full object-contain p-3 transition duration-500 group-hover:scale-105" />
@@ -28,6 +28,6 @@
       <span class="font-semibold">{{ p.price | price }}</span>
       @if (p.oldPrice) { <span class="text-xs text-ink/40 line-through">{{ p.oldPrice | price }}</span> }
     </div>
-    <div class="mt-auto pt-3"><app-cart-control [productId]="p.id" [productName]="p.name" /></div>
+    <div class="mt-auto pt-3"><app-cart-control [productId]="p.id" [productName]="p.name" [accent]="favoriteView()" [label]="favoriteView() ? 'Добавить' : 'В корзину'" /></div>
   </div>
 </article>

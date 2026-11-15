@@ -35,6 +35,8 @@ export class SearchHistoryService {
   }
 
   private normalize(value: string): string | null {
+    const product = this.productFor(value);
+    if (product) return product.name;
     const query = key(value.trim().replace(/\s+/g, ' '));
     if (query.length < 2 || query.length > 120 || STOP_WORDS.has(query) ||
         !/^[\p{L}\p{N}]+(?:[ -][\p{L}\p{N}]+)*$/u.test(query) ||
@@ -70,6 +72,13 @@ export class SearchHistoryService {
     const query = this.normalize(value);
     if (!query) return;
     this.entries.update(list => [query, ...list.filter(q => key(q) !== key(query))].slice(0, LIMIT));
+  }
+  productFor(value: string) {
+    return this.products.products.find(product => key(product.name) === key(value.trim()));
+  }
+  rememberProduct(id: number): void {
+    const product = this.products.getById(id);
+    if (product) this.remember(product.name);
   }
   remove(query: string): void { this.entries.update(list => list.filter(q => q !== query)); }
   clear(): void { this.entries.set([]); }

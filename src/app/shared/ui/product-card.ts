@@ -14,6 +14,7 @@ import { Icon } from './icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductCard {
+  readonly favoriteView = input(false);
   readonly product = input.required<Product>();   // родитель передаёт товар: <app-product-card [product]="p" />
 
   protected readonly favorites = inject(FavoritesService);

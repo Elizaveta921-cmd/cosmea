@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Product } from '../core/models/product.model';
 import { ProductService } from '../core/services/product.service';
 import { SearchHistoryService } from '../core/services/search-history.service';
 import { PricePipe } from '../shared/pipes/price.pipe';
@@ -28,6 +29,7 @@ export class SearchBox {
   constructor() {
     this.router.events.pipe(takeUntilDestroyed()).subscribe(event => {
       if (event instanceof NavigationEnd) {
+        if (this.router.currentNavigation()?.extras.info === 'live-search') return;
         this.query.set(this.router.parseUrl(event.urlAfterRedirects).queryParams['q'] ?? '');
         this.open.set(false);
         this.active.set(-1);
@@ -38,6 +40,12 @@ export class SearchBox {
     this.query.set((event.target as HTMLInputElement).value);
     this.open.set(true);
     this.active.set(-1);
+    const catalog = this.router.url.split('?')[0] === '/catalog';
+    this.router.navigate(['/catalog'], {
+      queryParams: { q: this.query().trim() || null, page: null },
+      ...(catalog ? { queryParamsHandling: 'merge' as const } : {}),
+      replaceUrl: catalog, info: 'live-search',
+    });
   }
   protected focus(): void { this.open.set(true); this.active.set(-1); }
   protected submit(event?: Event): void {
@@ -47,11 +55,19 @@ export class SearchBox {
     this.open.set(false);
     this.router.navigate(['/catalog'], { queryParams: { q: q || null } });
   }
-  protected pick(): void {
+  protected pick(product: Product): void {
     this.history.remember(this.query());
+    this.history.rememberProduct(product.id);
     this.open.set(false);
   }
-  protected useHistory(query: string): void { this.query.set(query); this.submit(); }
+  protected useHistory(query: string): void {
+    const product = this.history.productFor(query);
+    if (product) {
+      this.history.rememberProduct(product.id);
+      this.open.set(false);
+      this.router.navigate(['/catalog', product.id]);
+    } else { this.query.set(query); this.submit(); }
+  }
   protected onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') { this.open.set(false); return; }
     const count = this.hasQuery() ? this.results().length : this.history.items().length;
@@ -63,7 +79,7 @@ export class SearchBox {
       event.preventDefault();
       if (this.hasQuery()) {
         const product = this.results()[this.active()];
-        this.pick();
+        this.pick(product);
         this.router.navigate(['/catalog', product.id]);
       } else this.useHistory(this.history.items()[this.active()]);
     }

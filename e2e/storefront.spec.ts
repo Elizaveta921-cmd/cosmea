@@ -226,9 +226,77 @@ test('search history completes catalog terms and rejects meaningless or ambiguou
   await search.fill('сы');
   await page.locator('#search-suggestions a').first().click();
   await expect(page).toHaveURL(new RegExp('/catalog/1$'));
-  await expect.poll(saved).toEqual(['сыворотка', 'крем', 'шампунь']);
+  await expect.poll(saved).toEqual(['Сыворотка с гиалуроновой кислотой', 'сыворотка', 'крем', 'шампунь']);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await search.focus();
   await expect(page.getByRole('option', { name: 'сыворотка', exact: true })).toBeVisible();
-  await expect.poll(saved).toEqual(['сыворотка', 'крем', 'шампунь']);
+  await expect.poll(saved).toEqual(['Сыворотка с гиалуроновой кислотой', 'сыворотка', 'крем', 'шампунь']);
+});
+
+test('catalog return survives entry from home and a product reload', async ({ page, isMobile }) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  const nav = page.getByRole('navigation', { name: isMobile ? 'Мобильное меню' : 'Основное меню' });
+  await nav.getByRole('link', { name: 'Каталог', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Страницы каталога' }).getByRole('button', { name: '3', exact: true }).click();
+  await expect(page).toHaveURL(/page=3/);
+  const card = page.locator('app-catalog-page app-product-card').first();
+  await card.locator('a').nth(1).scrollIntoViewIfNeeded();
+  const position = await page.evaluate(() => scrollY);
+  await card.locator('a').nth(1).click();
+  await page.locator('app-product-page h1').waitFor();
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: 'Назад', exact: true }).click();
+  await expect(page).toHaveURL(/catalog.*page=3/);
+  await expect(page.locator('app-catalog-page app-product-card')).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(position, 0);
+});
+
+test('typing filters the catalog while keeping suggestions and records opened products', async ({ page }) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  const search = page.getByRole('combobox', { name: 'Поиск по каталогу' });
+  await search.fill('сыв');
+  await expect(page).toHaveURL(/catalog.*q=/);
+  await expect(page.locator('app-catalog-page app-product-card')).toHaveCount(1);
+  await expect(search).toBeFocused();
+  await expect(page.locator('#search-suggestions a')).toHaveCount(1);
+  await search.fill('');
+  await expect(page.locator('app-catalog-page app-product-card')).toHaveCount(12);
+  await search.fill('гель');
+  await page.locator('#search-suggestions a').first().click();
+  await expect(page).toHaveURL(new RegExp('/catalog/21$'));
+  await search.focus();
+  const history = page.getByRole('option', { name: /Гель для душа/ });
+  await expect(history).toBeVisible();
+  await expect(history.locator('img')).toHaveCount(1);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await search.focus();
+  await history.click();
+  await expect(page).toHaveURL(new RegExp('/catalog/21$'));
+  await expect(page.locator('#search-suggestions')).not.toBeVisible();
+});
+
+test('mobile catalog toolbar stays below the header when scrolled', async ({ page, isMobile }) => {
+  test.skip(!isMobile);
+  await page.goto('/catalog', { waitUntil: 'domcontentloaded' });
+  await page.locator('app-product-card').first().waitFor();
+  await page.evaluate(() => scrollTo(0, 650));
+  await expect.poll(async () => {
+    const toolbar = await page.locator('.catalog-toolbar').boundingBox();
+    const header = await page.locator('app-header header').boundingBox();
+    return Math.abs(toolbar!.y - (header!.y + header!.height));
+  }).toBeLessThan(2);
+  await page.getByRole('button', { name: 'Фильтры', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+});
+
+test('favorites use a distinct add button and keep the shared quantity behavior', async ({ page }) => {
+  await page.goto('/catalog', { waitUntil: 'domcontentloaded' });
+  const card = page.locator('app-catalog-page app-product-card').first();
+  await card.getByRole('button', { name: 'Добавить в избранное', exact: true }).click();
+  await page.goto('/favorites', { waitUntil: 'domcontentloaded' });
+  const favorite = page.locator('app-favorites-page app-product-card').first();
+  await expect(favorite.getByRole('button', { name: /^Добавить в корзину:/ })).toHaveText('Добавить');
+  await favorite.getByRole('button', { name: /^Добавить в корзину:/ }).click();
+  await favorite.getByRole('button', { name: /^Увеличить количество:/ }).click();
+  await expect(favorite.locator('app-cart-control')).toContainText('2 шт.');
 });
